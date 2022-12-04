@@ -1,0 +1,52 @@
+day01.part1 : '{IO, Exception} ()
+day01.part1 = do
+  solve = day01.parseInput >> day01.part1.solution >> Nat.toText
+  submitSolution (Day 1) (Part 1) solve
+
+day01.part2 : '{IO, Exception} ()
+day01.part2 = do
+  solve = day01.parseInput >> day01.part2.solution >> Nat.toText
+  submitSolution (Day 1) (Part 2) solve
+
+day01.parseInput : Text -> [[Nat]]
+day01.parseInput =
+  (Text.split ?\n)
+    >> List.split Text.isEmpty
+    >> List.map (List.filterMap Nat.fromText)
+
+day01.part1.solution : [[Nat]] -> Nat
+day01.part1.solution = 
+  use Nat + 
+  List.map sum >> maximum >> Optional.getOrElse 0
+
+-- https://www.reddit.com/r/adventofcode/comments/z9ezjb/2022_day_1_solutions/iygzbos/
+
+-- bit of a brute force solution, a more efficient one available at https://share.unison-lang.org/@runarorama/p/code/latest/namespaces/public/advent/code2022/day01
+
+day01.part2.solution : [[Nat]] -> Nat
+day01.part2.solution = 
+    use List foldLeft 
+    use Nat + >= 
+    List.map (foldLeft (+) 0)  >> sortWith (>=) >> List.take 3 >> foldLeft (+) 0
+
+day01.sampleInput = "1000
+2000
+3000
+
+4000
+
+5000
+6000
+
+7000
+8000
+9000
+
+10000"
+
+day01.part1.solution.tests : [test.Result]
+day01.part1.solution.tests =
+  test.random
+    '(ensureEqual 24000 ((day01.parseInput >> day01.part1.solution) day01.sampleInput))
+
+test> day01.part1.solution.tests

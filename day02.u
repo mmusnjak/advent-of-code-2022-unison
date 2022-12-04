@@ -1,0 +1,122 @@
+day02.part1 : '{IO, Exception} ()
+day02.part1 = do
+  solve = day02.part1.parseInput >> day02.part1.solution >> Nat.toText
+  submitSolution (Day 2) (Part 1) solve
+
+day02.part2 : '{IO, Exception} ()
+day02.part2 = do
+  solve = day02.part2.solution
+  submitSolution (Day 2) (Part 2) solve
+
+pattern: Pattern Text
+pattern =  sepSome (literal "\n") (Pattern.join [capture anyChar, space, capture anyChar])
+
+unique type RPS = Rock | Paper | Scissors
+
+moveFromLetter : Char -> RPS
+moveFromLetter = cases
+  ?A -> Rock
+  ?B -> Paper
+  ?C -> Scissors
+  ?X -> Rock
+  ?Y -> Paper
+  ?Z -> Scissors
+
+order : RPS -> RPS -> Ordering
+order = cases
+  Rock, Rock         -> Equal
+  Rock, Paper        -> Less
+  Rock, Scissors     -> Greater
+  Paper, Rock        -> Greater
+  Paper, Paper       -> Equal
+  Paper, Scissors    -> Less
+  Scissors, Rock     -> Less
+  Scissors, Paper    -> Greater
+  Scissors, Scissors -> Equal
+
+payout : RPS -> RPS -> Nat
+payout a b =
+  match order a b with
+    Less    -> 6
+    Equal   -> 3
+    Greater -> 0
+
+value : RPS -> Nat
+value = cases
+  Rock     -> 1
+  Paper    -> 2
+  Scissors -> 3
+
+unique type Play = {opponentMove : RPS, playerMove : RPS}
+unique type PlayResponse ={opponentMove: RPS, result: Ordering}
+
+day02.part1.parseInput : Text -> [Play]
+day02.part1.parseInput input = 
+    inputParser = Pattern.run pattern >> Optional.map ( cases (a, b) -> a)  >> Optional.getOrBug "Hit a bug while parsing input" >> List.map( Text.toCharList >> List.head >> Optional.getOrBug "Empty string">> moveFromLetter)
+    go acc = cases
+        [] -> acc
+        [a,b] ++ remainingPlays ->
+            go (acc List.++ [Play a b]) remainingPlays
+    go [] (inputParser input)
+
+day02.part1.solution : [Play] -> Nat
+day02.part1.solution input = 
+  go: Nat -> [Play] -> Nat
+  go acc = cases
+    [] -> acc
+    [Play a b] ++ rest -> go (acc Nat.+ value b Nat.+ payout a b) rest
+  go 0 input
+
+desiredOutcome : RPS -> Ordering -> RPS
+desiredOutcome = cases
+  Rock, Equal       -> Rock
+  Rock, Less        -> Paper
+  Rock, Greater     -> Scissors
+  Paper, Greater    -> Rock
+  Paper, Equal      -> Paper
+  Paper, Less       -> Scissors
+  Scissors, Less    -> Rock
+  Scissors, Greater -> Paper
+  Scissors, Equal   -> Scissors
+
+orderFromChar : Char -> Ordering
+orderFromChar = cases
+  ?X -> Greater
+  ?Y -> Equal
+  ?Z -> Less
+
+day02.part2.solution : Text -> Text
+day02.part2.solution input = 
+  go : Nat -> [Char] -> Nat
+  go acc = cases
+    []             -> acc
+    [a, b] ++ rest ->
+      use Nat +
+      a' = moveFromLetter a
+      b' = desiredOutcome a' (orderFromChar b)
+      go (acc + value b' + payout a' b') rest
+  Pattern.run pattern input
+    |> getOrBug "parse fail"
+    |> at1
+    |> List.map
+         (getOrBug "unexpected letter " << List.head << toCharList)
+    |> go 0
+    |> Nat.toText
+
+day02.sampleInput = "A Y
+B X
+C Z"
+
+day02.part1.solution.tests : [test.Result]
+day02.part1.solution.tests =
+  test.random
+    '(ensureEqual 15 ((day02.part1.parseInput >> day02.part1.solution) day02.sampleInput))
+
+test> day02.part1.solution.tests
+
+day02.part2.solution.tests : [test.Result]
+day02.part2.solution.tests =
+  test.random
+    '(ensureEqual "12" ( day02.part2.solution day02.sampleInput))
+
+test> day02.part2.solution.tests

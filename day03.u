@@ -1,0 +1,69 @@
+day03.part1 : '{IO, Exception} ()
+day03.part1 = do
+  solve = day03.part1.parseInput >> day03.part1.solution >> Nat.toText
+  submitSolution (Day 3) (Part 1) solve
+
+day03.part1.parseInput : Text -> [([Char], [Char])]
+day03.part1.parseInput = Text.split ?\n >> List.map (toCharList >> halve ) 
+
+day03.part1.solution : [([Char], [Char])] -> Nat
+day03.part1.solution =  List.map (uncurry findCommon) >> sum
+
+day03.part2.parseInput : Text -> [[[Char]]]
+day03.part2.parseInput = Text.split ?\n >> List.map toCharList >> chunk 3
+
+day03.part2.solution : [[[Char]]] -> Nat
+day03.part2.solution input = List.map day03.part2.findCommon input |> sum
+
+day03.part2 : '{IO, Exception} ()
+day03.part2 = do
+  solve = day03.part2.parseInput >> day03.part2.solution >> Nat.toText
+--   a = day03.part2.parseInput
+--   solve input = 
+--     Debug.trace "input" (day03.part2.parseInput input |> day03.part2.solution)
+--     "33"
+  submitSolution (Day 3) (Part 2) solve
+
+priority : Char -> Nat 
+priority c =
+  use Char < toNat
+  use Nat + -
+  if c < ?a then toNat c - toNat ?A + 27 else toNat c - toNat ?a + 1
+
+findCommon : [Char] -> [Char] -> Nat
+findCommon xs ys =
+  use List map
+  use NatSet fromList
+  NatSet.intersect
+    (fromList (map priority xs)) (fromList (map priority ys))
+    |> NatSet.getMin
+    |> getOrBug "bug"
+
+day03.part2.findCommon : [[Char]] -> Nat
+day03.part2.findCommon =
+  Optional.getOrBug "oh no"
+    << NatSet.getMin
+    << List.foldMap
+         (List.map priority >> NatSet.fromList) NatSet.intersect NatSet.empty
+
+day03.sampleInput = "vJrwpWtwJgWrhcsFMMfFFhFp 
+jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+PmmdzqPrVvPwwTWBwg
+wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+ttgJtRGJQctTZtZT
+CrZsJsPPZsGzwwsLwLmpwMDw"
+
+day03.part1.solution.tests : [test.Result]
+day03.part1.solution.tests =
+  test.random
+    '(ensureEqual 157 ((day03.part1.parseInput >> day03.part1.solution) day03.sampleInput))
+
+test> day03.part1.solution.tests 
+
+day03.part2.solution.tests : [test.Result]
+day03.part2.solution.tests =
+  test.random
+    '(ensureEqual 70 ((day03.part2.parseInput >> day03.part2.solution) day03.sampleInput))
+
+test> day03.part2.solution.tests 
+

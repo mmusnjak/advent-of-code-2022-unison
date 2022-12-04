@@ -1,0 +1,67 @@
+day04.part1 : '{IO, Exception} ()
+day04.part1 = do
+  solve = day04.part1.parseInput >> day04.part1.solution >> Nat.toText
+  submitSolution (Day 4) (Part 1) solve
+
+day04.part1.parseInput : Text -> [(Interval, Interval)]
+day04.part1.parseInput = 
+    Text.split ?\n 
+        >> List.map (Text.split ?, >> List.map intervalFromInput)
+        >> List.map (cases [a,b]->(a,b))
+
+day04.part1.solution : [(Interval, Interval)] -> Nat
+day04.part1.solution =  List.filter intervalFullyContainsAnother >> size
+
+day04.part2 : '{IO, Exception} ()
+day04.part2 = do
+  solve = day04.part2.parseInput >> day04.part2.solution >> Nat.toText
+  submitSolution (Day 4) (Part 2) solve
+
+day04.part2.parseInput = day04.part1.parseInput
+
+day04.part2.solution : [(Interval, Interval)] -> Nat
+day04.part2.solution =  List.filter intervalOverlapsAnother >> size
+
+unique type Interval = {startInclusive: Nat, endInclusive: Nat}
+
+intervalOverlapsAnother: (Interval, Interval) -> Boolean
+intervalOverlapsAnother intervalPair = 
+    use Nat <= >= inRange +
+    (a,b) = intervalPair
+    inRange (Interval.startInclusive b) (Interval.endInclusive b + 1) (Interval.startInclusive a)
+        || inRange (Interval.startInclusive a) (Interval.endInclusive a + 1) (Interval.startInclusive b)
+
+intervalFullyContainsAnother: (Interval, Interval) -> Boolean
+intervalFullyContainsAnother pair =
+    use Nat <= >=
+    (a,b)=pair
+    ((Interval.startInclusive a <= Interval.startInclusive b) && (Interval.endInclusive a >= Interval.endInclusive b)) 
+        || ((Interval.startInclusive b<=Interval.startInclusive a) && (Interval.endInclusive b >= Interval.endInclusive a)) 
+
+intervalFromInput: Text -> Interval
+intervalFromInput  = 
+    Text.split ?- 
+        >> List.map Nat.fromText
+        >> somes
+        >> (cases [start, end]-> Interval start end)
+
+day04.sampleInput = "2-4,6-8
+2-3,4-5
+5-7,7-9
+2-8,3-7
+6-6,4-6
+2-6,4-8"
+
+day04.part1.solution.tests : [test.Result]
+day04.part1.solution.tests =
+  test.random
+    '(ensureEqual 2 ((day04.part1.parseInput >> day04.part1.solution) day04.sampleInput))
+
+test> day04.part1.solution.tests 
+
+day04.part2.solution.tests : [test.Result]
+day04.part2.solution.tests =
+  test.random
+    '(ensureEqual 4 ((day04.part2.parseInput >> day04.part2.solution) day04.sampleInput))
+
+test> day04.part2.solution.tests 
