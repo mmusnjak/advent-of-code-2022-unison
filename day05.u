@@ -1,0 +1,88 @@
+day05.part1 : '{IO, Exception} ()
+day05.part1 = do
+  solve = day05.parseInput >> day05.part1.solution
+  submitSolution (Day 5) (Part 1) solve
+
+day05.part2 : '{IO, Exception} ()
+day05.part2 = do
+  solve = day05.parseInput >> day05.part2.solution
+  submitSolution (Day 5) (Part 2) solve
+
+day05.sampleInput = "    [D]    
+[N] [C]    
+[Z] [M] [P]
+ 1   2   3 
+
+move 1 from 2 to 1
+move 3 from 1 to 3
+move 2 from 2 to 1
+move 1 from 1 to 2"
+
+day05.parseInput : Text -> ([[Text]], [(Nat, Nat, Nat)])
+day05.parseInput = 
+    use List filter map
+    use Text != ==
+    Text.split ?\n 
+        >> List.split ((==) "") 
+        >> (cases [stacks, moves] -> (stacks, moves))
+        >> Tuple.mapLeft  day05.parseStacks
+        >> Tuple.mapRight (map day05.parseMoves)
+
+day05.solution: Boolean -> ([[Text]], [(Nat, Nat, Nat)]) -> Text
+day05.solution moveOneByOne input =
+    (state, instructions) = input 
+    finalState = List.foldLeft (day05.executeInstruction moveOneByOne) state instructions 
+    Text.join "" (List.filterMap List.head finalState)
+
+day05.part1.solution = day05.solution true
+day05.part2.solution = day05.solution false
+
+day05.parseStacks: [Text] -> [[Text]]
+day05.parseStacks  = 
+    List.map (toCharList >> chunk 4 >> List.map (List.filter (Char.inRange ?A ?Z) >> fromCharList >> trim))
+        >> List.transpose 
+        >> List.map (filter ((!=) ""))
+
+day05.parseMoves: Text -> (Nat, Nat, Nat)
+day05.parseMoves =
+    Text.split ?\s
+        >> (cases [_, move, _, from, _, to] -> [move,from,to])
+        >> map Nat.fromText
+        >> somes
+        >> (cases [x,y,z] -> (x,y,z))
+
+day05.executeInstruction: Boolean -> [[Text]] -> (Nat, Nat, Nat)  -> [[Text]]
+day05.executeInstruction moveOneByOne state instruction =  
+    (count, from, to) = instruction
+    from' = from - 1
+    to' = to - 1
+    source = at from' state |> getOrBug "bad source index"
+    dest = at to' state |> getOrBug "bad dest index"
+    (picked, remainingSource) = List.splitAt count source
+    dest' = (if moveOneByOne then (List.reverse picked) else picked) ++ dest
+    replace from' remainingSource state |> replace to' dest'
+
+day05.part1.parsing.tests : [test.Result]
+day05.part1.parsing.tests =
+  test.random
+    '(ensureEqual ([["N", "Z"], ["D", "C", "M"], ["P"]],
+           [(1, 2, 1), (3, 1, 3), (2, 2, 1), (1, 1, 2)]) (day05.part1.parseInput  day05.sampleInput)
+    )
+
+test> day05.part1.parsing.tests
+
+day05.part1.sample.tests : [test.Result]
+day05.part1.sample.tests =
+  test.random
+    '(ensureEqual "CMZ" (day05.part1.parseInput day05.sampleInput |> day05.part1.solution)
+    )
+
+test> day05.part1.sample.tests
+
+day05.part2.sample.tests : [test.Result]
+day05.part2.sample.tests =
+  test.random
+    '(ensureEqual "MCD" (day05.parseInput day05.sampleInput |> day05.part2.solution)
+    )
+
+test> day05.part1.sample.tests

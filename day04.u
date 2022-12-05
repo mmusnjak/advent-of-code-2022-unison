@@ -22,7 +22,7 @@ day04.part2.parseInput = day04.part1.parseInput
 day04.part2.solution : [(Interval, Interval)] -> Nat
 day04.part2.solution =  List.filter intervalOverlapsAnother >> size
 
-unique type Interval = {startInclusive: Nat, endInclusive: Nat}
+--unique type Interval = {startInclusive: Nat, endInclusive: Nat}
 
 intervalOverlapsAnother: (Interval, Interval) -> Boolean
 intervalOverlapsAnother intervalPair = 
@@ -64,4 +64,4 @@ day04.part2.solution.tests =
   test.random
     '(ensureEqual 4 ((day04.part2.parseInput >> day04.part2.solution) day04.sampleInput))
 
-test> day04.part2.solution.tests 
+test> day04.part2.solution.tests
