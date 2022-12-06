@@ -1,0 +1,51 @@
+day06.part1.sampleInput = "bvwbjplbgvbhsrlpgdmjqwftvncz
+    nppdvjthqldpwncqszvftbrmjlhg
+    nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg
+    zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw
+"
+day06.part1.sampleResults = [5,6,10,11]
+
+day06.part2.sampleInput = "mjqjpqmgbljsphdztnvjfqwrcgsmlb
+    bvwbjplbgvbhsrlpgdmjqwftvncz
+    nppdvjthqldpwncqszvftbrmjlhg
+    nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg
+    zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw
+"
+day06.part2.sampleResults = [19,23,23,29,26]
+
+day06.parseInput: Text -> Text
+day06.parseInput = 
+    Text.split ?\n >> List.head >> getOrBug "oh no" >> Text.trim
+
+day06.slidingWindow: Nat -> [a] -> [[a]]
+day06.slidingWindow size list = 
+    match (Universal.ordering (List.size list) size) with 
+        Less -> [list]
+        Equal -> [list]
+        Greater -> [List.take size list] ++ day06.slidingWindow size (List.drop 1 list)
+
+day06.allUnique: [a] -> Boolean
+day06.allUnique list = List.size (List.distinct list) Nat.== List.size list
+
+day06.part1 : '{IO, Exception} ()
+day06.part1 = do
+  solve = day06.parseInput >> day06.part1.solution >> Nat.toText
+  submitSolution (Day 6) (Part 1) solve
+
+day06.part2 : '{IO, Exception} ()
+day06.part2 = do
+  solve = day06.parseInput >> day06.part2.solution >> Nat.toText
+  submitSolution (Day 6) (Part 2) solve
+
+day06.part1.solution = day06.solution 4
+day06.part2.solution = day06.solution 14
+
+day06.solution: Nat -> Text -> Nat
+day06.solution size = 
+    day06.parseInput
+        >> toCharList
+        >> day06.slidingWindow size 
+        >> List.mapIndexed (i a->((i + size), day06.allUnique a)) 
+        >> (List.find (t->at2 t)) 
+        >> getOrBug "No true item" 
+        >> at1
