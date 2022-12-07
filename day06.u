@@ -19,7 +19,6 @@ test> testPart2 = test.random do
   (input, expectedOutput) = each (List.zip (day06.part2.sampleInput |> Text.split ?\n |> List.map Text.trim) day06.part2.sampleResults)
   validate do expectedOutput === (day06.part2.solution input)
 
-
 day06.parseInput: Text -> Text
 day06.parseInput = 
     Text.split ?\n >> List.head >> getOrBug "oh no" >> Text.trim

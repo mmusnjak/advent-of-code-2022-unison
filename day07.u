@@ -1,0 +1,107 @@
+day07.sampleInput = "
+    $ cd /
+    $ ls
+    dir a
+    14848514 b.txt
+    8504156 c.dat
+    dir d
+    $ cd a
+    $ ls
+    dir e
+    29116 f
+    2557 g
+    62596 h.lst
+    $ cd e
+    $ ls
+    584 i
+    $ cd ..
+    $ cd ..
+    $ cd d
+    $ ls
+    4060174 j
+    8033020 d.log
+    5626152 d.ext
+    7214296 k
+"
+day07.parseInput: Text -> [[Text]]
+day07.parseInput = 
+    Text.split ?\n >> List.map Text.trim >> List.filter ((Text.!=) Text.empty) >> List.map (Text.split ?\s)
+
+day07.folder: ((data.Trie Text [Nat]), [Text]) -> [Text] -> (data.Trie Text [Nat], [Text])
+day07.folder = cases
+    (trie, cwd), ["$", "cd", "/"] -> 
+        (trie, [])
+    (trie, allExceptLast :+ _), ["$", "cd", ".."] -> 
+        -- Remove the last path element
+        (trie, allExceptLast)
+    (trie, cwd), ["$", "cd", path] -> 
+        -- Extend the path with parameter of cd
+        (trie, cwd :+ path)
+    (trie, cwd), ["$", "ls"] -> 
+        -- doing nothing
+        (trie, cwd)
+    (trie, cwd), ["dir", dir] -> 
+        -- Just add a new subtree to prepare for future updates
+        newSubtrie = Trie.union trie (singleton (cwd :+ dir) [])
+        (newSubtrie, cwd)
+    (trie, cwd), [size, fileName] -> 
+        -- Seeing a new file name, add it to all nodes up the tree from current directory
+        fileSize = size |> Nat.fromText |> getOrBug "NaN"
+        updatedSizeSums = 
+            (List.foldLeft (acc path -> Trie.unionWith (++) acc (data.Trie.singleton path [fileSize]))
+            trie
+            (inits cwd))
+        (updatedSizeSums, cwd)
+
+day07.part1.solution: [[Text]] -> Nat
+day07.part1.solution = 
+    List.foldLeft (day07.folder) (data.Trie.empty, []) 
+        >> at1
+        >> Trie.map (foldLeft (+) 0)
+        >> Trie.toList 
+        >> List.map at2
+        >> List.filter ((>=) 100000)
+        >> sum 
+
+day07.part2.solution: [[Text]] -> Nat
+day07.part2.solution = 
+    List.foldLeft (day07.folder) (data.Trie.empty, []) 
+        >> at1
+        >> Trie.map (foldLeft (+) 0)
+        >> Trie.toList 
+        >> (cases
+            ([], totalUsage) +: rest -> 
+                unusedSpace = 70000000 - totalUsage
+                requiredSpace = 30000000 - unusedSpace
+                rest
+                    |> List.map at2
+                    |> sort      
+                    |> find ((Nat.<) 8381165)
+            ) 
+        >> getOrBug "No solution!!!"
+
+day07.part1 : '{IO, Exception} ()
+day07.part1 = do
+  solve = day07.parseInput >> day07.part1.solution >> Nat.toText
+  submitSolution (Day 7) (Part 1) solve
+
+day07.part2 : '{IO, Exception} ()
+day07.part2 = do
+  solve = day07.parseInput >> day07.part2.solution >> Nat.toText
+  submitSolution (Day 7) (Part 2) solve
+
+day07.part1.sample.tests : [test.Result]
+day07.part1.sample.tests =
+  test.random
+    '(ensureEqual 95437 (day07.parseInput day07.sampleInput |> day07.part1.solution)
+    )
+
+test> day07.part1.sample.tests
+
+day07.part2.sample.tests : [test.Result]
+day07.part2.sample.tests =
+  test.random
+    '(ensureEqual 24933642 (day07.parseInput day07.sampleInput |> day07.part2.solution)
+    )
+
+test> day07.part1.sample.tests
