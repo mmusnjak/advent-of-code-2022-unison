@@ -104,4 +104,4 @@ day07.part2.sample.tests =
     '(ensureEqual 24933642 (day07.parseInput day07.sampleInput |> day07.part2.solution)
     )
 
-test> day07.part1.sample.tests
+test> day07.part2.sample.tests

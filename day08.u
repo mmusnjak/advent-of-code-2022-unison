@@ -1,0 +1,110 @@
+day08.sampleInput = "30373
+25512
+65332
+33549
+35390"
+
+day08.parseInput : Text -> [[Nat]]
+day08.parseInput =
+  Text.split ?\n
+    >> List.map (toCharList >> lib.base.data.List.filterMap toBase36Digit)
+
+day08.part1.initializeSweep : [[Nat]] -> [[(Nat, Boolean)]]
+day08.part1.initializeSweep =
+  use List map
+  map (map (n -> (n, false)))
+
+day08.part1.sweep : [[(Nat, Boolean)]] -> [[(Nat, Boolean)]]
+day08.part1.sweep =
+  use List map
+  scanLine = cases
+    -- We ran out of items
+    acc, _, [] -> acc
+    -- This is the first item we see
+    acc, None, x@(n, _) +: xs -> scanLine (acc :+ (n, true)) (Some n) xs
+    -- Regular case
+    acc, Some curMax, x@(n, seen) +: xs ->
+      use Nat >
+      if n > curMax then scanLine (acc :+ (n, true)) (Some n) xs
+      else scanLine (acc :+ (n, seen)) (Some curMax) xs
+  f = scanLine [] None << List.reverse << scanLine [] None
+  map f << lib.base.data.List.transpose << map f
+
+day08.part1.countSeen : [[(Nat, Boolean)]] -> Nat
+day08.part1.countSeen = List.join >> List.count at2
+
+day08.part1 : '{IO, Exception} ()
+day08.part1 =
+  do
+    solve = day08.parseInput >> day08.part1.solution >> Nat.toText
+    submitSolution (Day 8) (Part 1) solve
+
+day08.part1.solution = day08.part1.initializeSweep >> day08.part1.sweep >> day08.part1.countSeen
+
+day08.part1.sample.tests : [test.Result]
+day08.part1.sample.tests =
+  test.random
+    '(ensureEqual 21 (day08.parseInput day08.sampleInput |> day08.part1.solution)
+    )
+
+test> day08.part1.sample.tests
+
+day08.part2.initializeView : [[Nat]] -> [[(Nat, Nat)]]
+day08.part2.initializeView =
+  use List map
+  map (map (n -> (n, 1)))
+
+maximumBy : (a ->{e} a ->{e} Ordering) -> [a] ->{e} Optional a
+maximumBy f xs =
+  go = cases
+    None, x +: xs   -> go (Some x) xs
+    Some y, x +: xs 
+      | f x y === Greater -> go (Some x) xs
+      | otherwise         -> go (Some y) xs
+    y, _            -> y
+  go None xs
+
+findLastIndex : (a ->{e} Boolean) -> [a] ->{e} Optional Nat
+findLastIndex f xs =
+  use Nat -
+  go i = cases
+    xs :+ x 
+      | f x       -> Some i
+      | otherwise -> go (i - 1) xs
+    _       -> None
+  go (List.size xs - 1) xs
+
+day08.part2.sweepView : [[(Nat, Nat)]] -> [[(Nat, Nat)]]
+day08.part2.sweepView =
+  go : [(Nat, Nat)] -> [(Nat, Nat)] -> [(Nat, Nat)]
+  go = cases
+    acc, [] -> acc
+    acc, x@(n, vd) +: xs ->
+      use Nat *
+      seen = List.size acc
+      seenShorter =
+        use Nat - >=
+        Optional.getOrElse
+          seen
+          (Optional.map
+            (x -> seen - x)
+            (findLastIndex (cases (t, _) -> t >= n) acc))
+      go (acc :+ (n, seenShorter * vd)) xs
+  f = List.reverse << go [] << List.reverse << go []
+  lib.base.data.List.transpose << List.map f << lib.base.data.List.transpose <<  List.map f
+
+day08.part2 : '{IO, Exception} ()
+day08.part2 =
+  do
+    solve = day08.parse >> day08.part2.solution >> Nat.toText
+    submitSolution (Day 8) (Part 2) solve
+
+day08.part2.solution = day08.part2.initializeView >> day08.part2.sweepView >> List.join >> maximumBy (on Universal.ordering at2) >> getOrBug "No best view!" >> at2
+
+day08.part2.sample.tests : [test.Result]
+day08.part2.sample.tests =
+  test.random
+    '(ensureEqual 8 (day08.parseInput day08.sampleInput |> day08.part2.solution)
+    )
+
+test> day08.part1.sample.tests
