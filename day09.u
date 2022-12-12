@@ -1,0 +1,118 @@
+day09.part1.sampleInput="R 4
+U 4
+L 3
+D 1
+R 4
+D 1
+L 5
+R 2"
+
+day09.part2.sampleInput="R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20"
+
+structural type Direction = Up | Down | Left | Right | UpRight | UpLeft | DownRight | DownLeft | Wait
+
+day09.directionFromText = cases 
+    "R" -> Right
+    "L" -> Left
+    "U" -> Up
+    "D" -> Down
+
+day09.parseInput : Text -> [Direction]
+day09.parseInput input =
+  input
+    |> Text.split ?\n
+    |> List.map
+         (Text.split ?\s
+           >> (cases
+                [dir, dist] ->
+                  (day09.directionFromText dir, getOrBug "Bad input" (Nat.fromText dist))))
+    |> List.flatMap day09.expand
+
+day09.expand: (Direction, Nat) -> [Direction] 
+day09.expand move = List.fill (at2 move) (at1 move)
+
+day09.move : (Int, Int) -> Direction -> (Int, Int)
+day09.move position =
+    (x, y) = position
+    use Int +
+    cases
+        Up -> (x, y + +1)
+        Down -> (x, y- +1)
+        Left -> (x- +1, y)
+        Right -> (x + +1, y)
+        UpRight -> (x + +1, y + +1)
+        UpLeft -> (x- +1, y + +1)
+        DownRight -> (x + +1, y- +1)
+        DownLeft -> (x- +1, y- +1)
+        Wait -> (x,y)
+
+day09.solution : Nat -> [Direction] -> Nat
+day09.solution knots movements =
+  go visited head knots = cases --matching on 'movements'
+    [] -> Set.size visited
+    dir +: rest -> 
+      newHead = day09.move head dir
+      updated = List.scanl follow newHead knots
+      newKnots = Nonempty.tail updated
+      newVisited =  Set.insert (Nonempty.last updated) visited
+      go newVisited newHead newKnots rest
+  go (Set.singleton (+0, +0)) (+0, +0) (fill knots (+0, +0)) movements
+
+day09.follow : (Int, Int) -> (Int, Int) -> (Int, Int)
+day09.follow = cases
+  (hx, hy), (tx, ty) ->
+    use Int - abs
+    use Nat >
+    diffx = hx - tx
+    diffy = hy - ty
+      -- "If the knot we're following is too far away, move towards it."
+      -- "We're always just moving -1, 0, or 1 step along either axis."
+    if (abs diffx > 1) || (abs diffy > 1) then
+      use Int +
+      (tx + signum diffx, ty + signum diffy)
+    else (tx, ty)
+
+day09.part1 : '{IO, Exception} ()
+day09.part1 = do
+  solve = day09.parseInput >> day09.part2.solution >> Nat.toText
+  submitSolution (Day 9) (Part 1) solve
+
+day09.part2 : '{IO, Exception} ()
+day09.part2 = do
+  solve = day09.parseInput >> day09.part2.solution >> Nat.toText
+  submitSolution (Day 9) (Part 2) solve
+
+day09.part1.solution = day09.solution 1
+day09.part2.solution = day09.solution 9
+
+day09.part1.sample.tests : [test.Result]
+day09.part1.sample.tests =
+  test.random
+    '(ensureEqual 13 (day09.parseInput day09.sampleInput |> day09.part1.solution)
+    )
+
+test> day09.part1.sample.tests
+
+day09.part2.sample.testSimpleInput : [test.Result]
+day09.part2.sample.testSimpleInput =
+  test.random
+    '(ensureEqual 1 (day09.parseInput day09.part1.sampleInput |> day09.part2.solution)
+    )
+
+test> day09.part2.sample.testSimpleInput
+
+day09.part2.sample.testLargeInput : [test.Result]
+day09.part2.sample.testLargeInput =
+  test.random
+    '(ensureEqual 36 (day09.parseInput day09.part2.sampleInput |> day09.part2.solution)
+    )
+
+test> day09.part2.sample.testLargeInput
+
