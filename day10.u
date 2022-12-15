@@ -1,0 +1,216 @@
+-- unique type Op = Noop | Add Int
+
+day10.sampleInput="addx 15
+addx -11
+addx 6
+addx -3
+addx 5
+addx -1
+addx -8
+addx 13
+addx 4
+noop
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx 5
+addx -1
+addx -35
+addx 1
+addx 24
+addx -19
+addx 1
+addx 16
+addx -11
+noop
+noop
+addx 21
+addx -15
+noop
+noop
+addx -3
+addx 9
+addx 1
+addx -3
+addx 8
+addx 1
+addx 5
+noop
+noop
+noop
+noop
+noop
+addx -36
+noop
+addx 1
+addx 7
+noop
+noop
+noop
+addx 2
+addx 6
+noop
+noop
+noop
+noop
+noop
+addx 1
+noop
+noop
+addx 7
+addx 1
+noop
+addx -13
+addx 13
+addx 7
+noop
+addx 1
+addx -33
+noop
+noop
+noop
+addx 2
+noop
+noop
+noop
+addx 8
+noop
+addx -1
+addx 2
+addx 1
+noop
+addx 17
+addx -9
+addx 1
+addx 1
+addx -3
+addx 11
+noop
+noop
+addx 1
+noop
+addx 1
+noop
+noop
+addx -13
+addx -19
+addx 1
+addx 3
+addx 26
+addx -30
+addx 12
+addx -1
+addx 3
+addx 1
+noop
+noop
+noop
+addx -9
+addx 18
+addx 1
+addx 2
+noop
+noop
+addx 9
+noop
+noop
+noop
+addx -1
+addx 2
+addx -37
+addx 1
+addx 3
+noop
+addx 15
+addx -21
+addx 22
+addx -6
+addx 1
+noop
+addx 2
+addx 1
+noop
+addx -10
+noop
+noop
+addx 20
+addx 1
+addx 2
+addx 2
+addx -6
+addx -11
+noop
+noop
+noop"
+
+day10.parseInput: Text -> [Op]
+day10.parseInput t =
+    parseOp line =
+        match Text.split ?\s line with
+            ["noop"]    -> [Noop]
+            ["addx", n] -> [Noop, Add ((Int.fromText >> getOrBug "bad int") n)]
+    List.flatMap parseOp (Text.split ?\n t)
+
+-- > day10.sampleInput |> day10.parseInput |> List.scanl day10.interpretOp +1 |> List.Nonempty.toList |> List.take 20 |> List.mapIndexed (i v -> (i+1,v))
+
+day10.interpretOp : Int -> Op -> Int
+day10.interpretOp x = cases
+  Noop  -> x
+  Add n ->
+    use Int +
+    x + n
+
+day10.runProgram = List.scanl day10.interpretOp +1 >> List.Nonempty.toList 
+
+day10.sampleCycles: [Int] -> [Nat]
+day10.sampleCycles list =
+    use Nat <
+    List.unfold
+      20 (x ->
+        (if x < List.size list then
+          use Nat +
+          Some (x, x + 40)
+        else None))
+
+day10.readAtPos : Nat -> [Int] -> Int
+day10.readAtPos i list = List.at (i - 1) list |> getOrBug "out of bounds"
+
+day10.part1.solution : [Op] -> Int
+day10.part1.solution ops = 
+    use Int *
+    signals = day10.runProgram ops
+    List.foldBalanced (c -> Nat.toInt c * readAtPos c signals) (Int.+) +0 (sampleCycles signals)
+
+day10.part1 : '{IO, Exception} ()
+day10.part1 = do
+  solve = day10.parseInput >> day10.part1.solution >> Int.toText
+  submitSolution (Day 10) (Part 1) solve
+
+day10.crtBlot : Int -> Nat -> Text
+day10.crtBlot x i =
+  use Int + - ==
+  i' = Nat.toInt i
+  match x with
+    x 
+      | x == i'        -> "#"
+      | x == (i' - +1) -> "#"
+      | x == (i' + +1) -> "#"
+    _ -> " "
+
+day10.runCrt : [Op] -> [Text]
+day10.runCrt ops =
+  use List map
+  xs = day10.runProgram ops
+  mapIndexed (i x -> (x, Nat.mod i 40)) xs
+    |> map (uncurry day10.crtBlot)
+    |> List.chunk 40
+    |> map (Text.join "")
+
+day10.displayPart2 : '{IO, Exception} [Text]
+day10.displayPart2 = do
+  input = defaultHandler '(AdventOfCode.input (Year 2022) (Day 10))
+  day10.runCrt (day10.parseInput input)
